@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}{{ item.title }} — firefox #{{ item.ref }} — browsers.fail{% endblock %}
+
+{% block content %}
+<div class="detail">
+  <a class="back" href="{{ url_for('search', q='browser:firefox') }}">← firefox</a>
+
+  <div class="detail-head">
+    <p class="eyebrow">bugzilla #{{ item.ref }}</p>
+    <h1>{{ item.title }}</h1>
+    <div class="badges">
+      <span class="badge kind-firefox">firefox</span>
+      {% if item.severity %}<span class="badge sev-{{ item.severity }}">{{ item.severity }}</span>{% endif %}
+      {% if item.vuln_type %}<span class="badge type">{{ item.vuln_type }}</span>{% endif %}
+      {% if item.reward %}<span class="badge reward">{{ item.reward|reward_label }}</span>{% endif %}
+      {% if item.status %}<span class="badge status">{{ item.status }}{% if item.resolution %} / {{ item.resolution }}{% endif %}</span>{% endif %}
+    </div>
+  </div>
+
+  <div class="detail-grid">
+    <div class="detail-main">
+      <h2>description</h2>
+      <pre class="body">{{ item.body }}</pre>
+
+      {% if extra.crash_signature %}
+      <h2>crash signature</h2>
+      <pre class="body">{{ extra.crash_signature }}</pre>
+      {% endif %}
+
+      {% if extra.see_also %}
+      <h2>see also</h2>
+      <ul class="link-list">
+        {% for link in extra.see_also %}
+        {% set safe = link|safe_link %}
+        {% if safe %}<li><a href="{{ safe }}" target="_blank" rel="noreferrer">{{ safe }}</a></li>{% endif %}
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+
+    <aside class="detail-side">
+      <h2>metadata</h2>
+      <dl class="facts">
+        <dt>bug</dt><dd><a href="{{ item.url }}" target="_blank" rel="noreferrer">#{{ item.ref }} ↗</a></dd>
+        <dt>product</dt><dd>{{ item.product or '—' }}</dd>
+        <dt>component</dt><dd>{{ item.component or '—' }}</dd>
+        <dt>severity</dt><dd>{{ item.severity or '—' }}</dd>
+        <dt>type</dt><dd>{{ item.vuln_type or '—' }}</dd>
+        <dt>status</dt><dd>{{ item.status or '—' }}{% if item.resolution %} / {{ item.resolution }}{% endif %}</dd>
+        <dt>created</dt><dd>{{ item.created_at|short_date }}</dd>
+        <dt>fixed</dt><dd>{{ item.fixed_at|short_date }}</dd>
+        <dt>cve</dt><dd>{{ item.cve or '—' }}</dd>
+        <dt>reward</dt><dd>{{ item.reward|reward_label if item.reward else '—' }}</dd>
+        <dt>keywords</dt><dd>{{ item.keywords or '—' }}</dd>
+      </dl>
+
+      {% if extra.flags %}
+      <details class="flags">
+        <summary>flags</summary>
+        <ul class="plain-list">
+          {% for flag in extra.flags %}
+          <li><span>{{ flag.name }}</span><span class="mono">{{ flag.status }}</span></li>
+          {% endfor %}
+        </ul>
+      </details>
+      {% endif %}
+
+      {% if extra.whiteboard %}
+      <h2>whiteboard</h2>
+      <pre class="small-body">{{ extra.whiteboard }}</pre>
+      {% endif %}
+
+      <h2>search</h2>
+      <div class="side-links">
+        {% if item.component %}<a href="{{ url_for('search', q='component:' + item.component) }}">same component</a>{% endif %}
+        {% if item.vuln_type %}<a href="{{ url_for('search', q='type:' + item.vuln_type) }}">same type</a>{% endif %}
+        {% if item.cve %}<a href="{{ url_for('search', q='cve:' + item.cve) }}">same cve</a>{% endif %}
+      </div>
+    </aside>
+  </div>
+</div>
+{% endblock %}

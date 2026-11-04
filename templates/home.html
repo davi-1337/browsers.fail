@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}browsers.fail — firefox and webkit vulnerabilities{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <p class="eyebrow">public vulnerability index</p>
+  <h1>browsers<span>.fail</span></h1>
+  <p class="lede">
+    search public Mozilla security bugs and security-relevant WebKit fixes.
+    one query, two browsers, no login.
+  </p>
+
+  <form class="hero-search" action="{{ url_for('search') }}" method="get" role="search">
+    <input type="search" name="q" autocomplete="off"
+           placeholder="try: type:use-after-free component:DOM cve:CVE-2026-8955"
+           aria-label="search vulnerabilities">
+    <button type="submit">search</button>
+  </form>
+
+  <div class="quick-links">
+    <span class="muted">quick:</span>
+    <a href="{{ url_for('search', q='browser:firefox') }}">firefox</a>
+    <a href="{{ url_for('search', q='browser:webkit') }}">webkit</a>
+    <a href="{{ url_for('search', q='reward:yes') }}">bounty awarded</a>
+    <a href="{{ url_for('search', q='type:use-after-free') }}">use-after-free</a>
+    <a href="{{ url_for('search', q='type:out-of-bounds') }}">out-of-bounds</a>
+  </div>
+</section>
+
+<section class="stats">
+  <div class="stat">
+    <span class="stat-value">{{ stats.total }}</span>
+    <span class="stat-label">items</span>
+  </div>
+  <div class="stat">
+    <span class="stat-value">{{ stats.firefox }}</span>
+    <span class="stat-label">firefox bugs</span>
+  </div>
+  <div class="stat">
+    <span class="stat-value">{{ stats.webkit }}</span>
+    <span class="stat-label">webkit commits</span>
+  </div>
+  <div class="stat">
+    <span class="stat-value small">{{ stats.updated|short_date }}</span>
+    <span class="stat-label">last index</span>
+  </div>
+</section>
+
+<section class="browser-grid">
+  <article class="browser-card">
+    <header class="card-head">
+      <div>
+        <p class="eyebrow">bugzilla.mozilla.org</p>
+        <h2>firefox</h2>
+      </div>
+      <span class="count">{{ stats.firefox }}</span>
+    </header>
+    <p class="card-copy">
+      public security bugs rated sec-critical, sec-high, sec-moderate or sec-low.
+      includes the bounty flag when Mozilla has one.
+    </p>
+    <div class="latest-list">
+      {% for item in firefox %}
+      <a class="latest-row" href="{{ item|item_url }}">
+        <span class="latest-date">{{ item.created_at|short_date }}</span>
+        <span class="latest-title">{{ item.title }}</span>
+        <span class="latest-type">{{ item.vuln_type or 'other' }}</span>
+      </a>
+      {% else %}
+      <p class="empty">no data yet. run <code>python scrape_firefox.py</code>.</p>
+      {% endfor %}
+    </div>
+    <a class="card-link" href="{{ url_for('search', q='browser:firefox') }}">browse firefox →</a>
+  </article>
+
+  <article class="browser-card">
+    <header class="card-head">
+      <div>
+        <p class="eyebrow">github.com/WebKit/WebKit</p>
+        <h2>webkit</h2>
+      </div>
+      <span class="count">{{ stats.webkit }}</span>
+    </header>
+    <p class="card-copy">
+      WebKit has no public security bug tracker, so this side reads commits and keeps
+      the ones that mention a vulnerability pattern.
+    </p>
+    <div class="latest-list">
+      {% for item in webkit %}
+      <a class="latest-row" href="{{ item|item_url }}">
+        <span class="latest-date">{{ item.created_at|short_date }}</span>
+        <span class="latest-title">{{ item.title }}</span>
+        <span class="latest-type">{{ item.vuln_type or 'other' }}</span>
+      </a>
+      {% else %}
+      <p class="empty">no data yet. run <code>python scrape_webkit.py</code>.</p>
+      {% endfor %}
+    </div>
+    <a class="card-link" href="{{ url_for('search', q='browser:webkit') }}">browse webkit →</a>
+  </article>
+</section>
+
+<section class="how">
+  <div class="how-item">
+    <h3>firefox</h3>
+    <p>the indexer reads the Bugzilla REST API and keeps only bugs with a <code>sec-*</code> keyword.</p>
+  </div>
+  <div class="how-item">
+    <h3>webkit</h3>
+    <p>commits are grouped by terms like use-after-free, oob, xss, sandbox escape and cve. it is a best effort, not a cve database.</p>
+  </div>
+  <div class="how-item">
+    <h3>reward</h3>
+    <p>Mozilla does not publish the dollar amount for each bug. the site indexes the <code>sec-bounty</code> flag: awarded, nominated or denied.</p>
+  </div>
+</section>
+{% endblock %}

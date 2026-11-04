@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}not found — browsers.fail{% endblock %}
+{% block content %}
+<div class="empty-state page-empty">
+  <p class="eyebrow">404</p>
+  <h1>nothing here</h1>
+  <p>the bug or commit does not exist in this index.</p>
+  <a class="card-link" href="{{ url_for('home') }}">go home →</a>
+</div>
+{% endblock %}

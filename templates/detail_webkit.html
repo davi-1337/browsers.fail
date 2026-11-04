@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}{{ item.title }} — webkit commit — browsers.fail{% endblock %}
+
+{% block content %}
+<div class="detail">
+  <a class="back" href="{{ url_for('search', q='browser:webkit') }}">← webkit</a>
+
+  <div class="detail-head">
+    <p class="eyebrow">commit {{ item.ref[:12] }}</p>
+    <h1>{{ item.title }}</h1>
+    <div class="badges">
+      <span class="badge kind-webkit">webkit</span>
+      {% if item.vuln_type %}<span class="badge type">{{ item.vuln_type }}</span>{% endif %}
+      {% if extra.confidence %}<span class="badge confidence">{{ extra.confidence }}</span>{% endif %}
+      {% if item.component %}<span class="badge status">{{ item.component }}</span>{% endif %}
+    </div>
+  </div>
+
+  <div class="detail-grid">
+    <div class="detail-main">
+      <h2>commit message</h2>
+      <pre class="body">{{ item.body }}</pre>
+
+      {% if extra.paths %}
+      <h2>files</h2>
+      <ul class="path-list">
+        {% for path in extra.paths %}
+        <li><code>{{ path }}</code></li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+
+      <p class="note">
+        this commit matched a vulnerability pattern in its message.
+        WebKit does not publish a security bug for every fix, so treat it as a lead,
+        not as a CVE record.
+      </p>
+    </div>
+
+    <aside class="detail-side">
+      <h2>metadata</h2>
+      <dl class="facts">
+        <dt>commit</dt>
+        <dd>
+          <span class="mono">{{ item.ref[:16] }}…</span>
+          <button class="copy" type="button" data-copy="{{ item.ref }}">copy</button>
+        </dd>
+        <dt>author</dt><dd>{{ extra.author or '—' }}</dd>
+        <dt>date</dt><dd>{{ item.created_at|short_date }}</dd>
+        <dt>component</dt><dd>{{ item.component or '—' }}</dd>
+        <dt>type</dt><dd>{{ item.vuln_type or '—' }}</dd>
+        <dt>bug</dt>
+        <dd>
+          {% if extra.bug_id %}
+          <a href="https://bugs.webkit.org/show_bug.cgi?id={{ extra.bug_id }}" target="_blank" rel="noreferrer">#{{ extra.bug_id }} ↗</a>
+          {% else %}—{% endif %}
+        </dd>
+        <dt>cve</dt><dd>{{ item.cve or '—' }}</dd>
+        <dt>signals</dt><dd>{{ extra.signals|join(', ') if extra.signals else '—' }}</dd>
+      </dl>
+
+      <h2>source</h2>
+      <div class="side-links">
+        <a href="{{ item.url }}" target="_blank" rel="noreferrer">github commit ↗</a>
+        {% if extra.bug_id %}
+        <a href="https://bugs.webkit.org/show_bug.cgi?id={{ extra.bug_id }}" target="_blank" rel="noreferrer">webkit bugzilla ↗</a>
+        {% endif %}
+      </div>
+
+      <h2>search</h2>
+      <div class="side-links">
+        {% if item.component %}<a href="{{ url_for('search', q='component:' + item.component) }}">same component</a>{% endif %}
+        {% if item.vuln_type %}<a href="{{ url_for('search', q='type:' + item.vuln_type) }}">same type</a>{% endif %}
+        {% if item.cve %}<a href="{{ url_for('search', q='cve:' + item.cve) }}">same cve</a>{% endif %}
+      </div>
+    </aside>
+  </div>
+</div>
+{% endblock %}

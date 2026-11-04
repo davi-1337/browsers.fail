@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% block title %}{% if raw %}{{ raw }} — {% endif %}search — browsers.fail{% endblock %}
+
+{% block content %}
+<section class="search-head">
+  <div>
+    <p class="eyebrow">search</p>
+    {% set type_filter = (parsed.filters.type or [''])[0] %}
+    {% set browser_filter = (parsed.filters.browser or [''])[0] %}
+    <h1>{% if parsed.text %}{{ parsed.text }}{% elif type_filter %}{{ type_filter }}{% elif browser_filter and browser_filter != 'all' %}{{ browser_filter }}{% elif has_filters %}filtered index{% else %}browse{% endif %}</h1>
+    <p class="muted">
+      {{ result.total }} item{{ '' if result.total == 1 else 's' }}
+      {% if result.pages > 1 %}· page {{ result.page }} of {{ result.pages }}{% endif %}
+    </p>
+    {% set current_sort = (parsed.filters.sort or ['relevance'])[0] %}
+    <div class="sort-row">
+      <span class="muted">sort</span>
+      {% for label, value in [('relevance', 'relevance'), ('new', 'new'), ('old', 'old'), ('severity', 'severity')] %}
+      <a href="{{ url_for('search', q=add_filter(raw, 'sort', value)) }}"
+         class="{{ 'active' if current_sort == value else '' }}">{{ label }}</a>
+      {% endfor %}
+    </div>
+  </div>
+
+  <form class="hero-search compact" action="{{ url_for('search') }}" method="get" role="search">
+    <input type="search" name="q" value="{{ raw }}" autocomplete="off"
+           placeholder="search bugs, commits, cve..." aria-label="search vulnerabilities">
+    <button type="submit">search</button>
+  </form>
+</section>
+
+<div class="search-layout">
+  <aside class="filters">
+    <div class="filter-head">
+      <h2>filters</h2>
+      {% if raw %}<a href="{{ url_for('search') }}">clear</a>{% endif %}
+    </div>
+
+    {% if result.facets.vuln_type %}
+    <section class="facet">
+      <h3>type</h3>
+      {% for f in result.facets.vuln_type %}
+      <a class="facet-row" href="{{ url_for('search', q=add_filter(raw, 'type', f.value)) }}">
+        <span>{{ f.value }}</span><span class="facet-count">{{ f.total }}</span>
+      </a>
+      {% endfor %}
+    </section>
+    {% endif %}
+
+    {% if result.facets.severity %}
+    <section class="facet">
+      <h3>severity</h3>
+      {% for f in result.facets.severity %}
+      <a class="facet-row" href="{{ url_for('search', q=add_filter(raw, 'severity', f.value)) }}">
+        <span>{{ f.value }}</span><span class="facet-count">{{ f.total }}</span>
+      </a>
+      {% endfor %}
+    </section>
+    {% endif %}
+
+    {% if result.facets.component %}
+    <section class="facet">
+      <h3>component</h3>
+      {% for f in result.facets.component %}
+      <a class="facet-row" href="{{ url_for('search', q=add_filter(raw, 'component', f.value)) }}">
+        <span>{{ f.value }}</span><span class="facet-count">{{ f.total }}</span>
+      </a>
+      {% endfor %}
+    </section>
+    {% endif %}
+
+    {% if result.facets.product %}
+    <section class="facet">
+      <h3>product</h3>
+      {% for f in result.facets.product %}
+      <a class="facet-row" href="{{ url_for('search', q=add_filter(raw, 'product', f.value)) }}">
+        <span>{{ f.value }}</span><span class="facet-count">{{ f.total }}</span>
+      </a>
+      {% endfor %}
+    </section>
+    {% endif %}
+
+    {% if result.facets.reward %}
+    <section class="facet">
+      <h3>reward</h3>
+      {% for f in result.facets.reward %}
+      <a class="facet-row" href="{{ url_for('search', q=add_filter(raw, 'reward', f.value)) }}">
+        <span>{{ f.value|reward_label }}</span><span class="facet-count">{{ f.total }}</span>
+      </a>
+      {% endfor %}
+    </section>
+    {% endif %}
+
+    <details class="syntax">
+      <summary>search syntax</summary>
+      <div class="syntax-body">
+        <code>type:use-after-free</code>
+        <code>type:oob</code>
+        <code>component:DOM</code>
+        <code>severity:critical</code>
+        <code>reward:yes</code>
+        <code>reward:pending</code>
+        <code>reward:no</code>
+        <code>reward:any</code>
+        <code>reward&gt;0</code>
+        <code>cve:CVE-2026-8955</code>
+        <code>browser:webkit</code>
+        <code>year:2024</code>
+        <code>status:fixed</code>
+        <code>sort:old</code>
+      </div>
+    </details>
+  </aside>
+
+  <section class="results">
+    {% if not parsed.text and not has_filters %}
+    <div class="empty-state">
+      <h2>type something</h2>
+      <p>search across Firefox security bugs and WebKit security commits.</p>
+      <div class="empty-links">
+        <a href="{{ url_for('search', q='browser:firefox') }}">firefox</a>
+        <a href="{{ url_for('search', q='browser:webkit') }}">webkit</a>
+        <a href="{{ url_for('search', q='reward:yes') }}">bounty awarded</a>
+        <a href="{{ url_for('search', q='type:xss') }}">xss</a>
+        <a href="{{ url_for('search', q='type:out-of-bounds') }}">out-of-bounds</a>
+      </div>
+    </div>
+    {% elif not result.rows %}
+    <div class="empty-state">
+      <h2>no results</h2>
+      <p>try a broader term or remove a filter.</p>
+      <a class="card-link" href="{{ url_for('search') }}">clear search →</a>
+    </div>
+    {% else %}
+    <div class="result-list">
+      {% for item in result.rows %}
+      <article class="result">
+        <div class="result-top">
+          <span class="badge kind-{{ item.kind }}">{{ item.kind }}</span>
+          {% if item.severity %}<span class="badge sev-{{ item.severity }}">{{ item.severity }}</span>{% endif %}
+          {% if item.vuln_type %}<span class="badge type">{{ item.vuln_type }}</span>{% endif %}
+          {% if item.reward %}<span class="badge reward">{{ item.reward|reward_label }}</span>{% endif %}
+          <span class="result-date">{{ item.created_at|short_date }}</span>
+        </div>
+
+        <h2 class="result-title"><a href="{{ item|item_url }}">{{ item.title }}</a></h2>
+        {% if item.snippet %}<p class="snippet">{{ item.snippet|hl }}</p>{% endif %}
+
+        <div class="meta">
+          {% if item.product %}<span>{{ item.product }}</span>{% endif %}
+          {% if item.component %}<span>{{ item.component }}</span>{% endif %}
+          {% if item.cve %}<span class="mono">{{ item.cve }}</span>{% endif %}
+          {% if item.status and item.kind == 'firefox' %}<span>{{ item.status }}{% if item.resolution and item.resolution|upper != item.status|upper %} / {{ item.resolution }}{% endif %}</span>{% endif %}
+          {% if item.fixed_at %}<span>{{ 'fixed ' if item.kind == 'firefox' else 'commit ' }}{{ item.fixed_at|short_date }}</span>{% endif %}
+          <a class="source" href="{{ item.url }}" target="_blank" rel="noreferrer">source ↗</a>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+
+    {% if result.pages > 1 %}
+    <nav class="pager" aria-label="pagination">
+      {% if result.page > 1 %}
+      <a href="{{ url_for('search', q=raw, page=result.page - 1) }}">← prev</a>
+      {% else %}
+      <span class="disabled">← prev</span>
+      {% endif %}
+      <span class="pager-info">{{ result.page }} / {{ result.pages }}</span>
+      {% if result.page < result.pages %}
+      <a href="{{ url_for('search', q=raw, page=result.page + 1) }}">next →</a>
+      {% else %}
+      <span class="disabled">next →</span>
+      {% endif %}
+    </nav>
+    {% endif %}
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
